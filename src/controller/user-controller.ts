@@ -52,4 +52,15 @@ export class UserController {
       nex(e);
     }
   }
+
+  static async logout(req: UserRequestType, res: Response, nex: NextFunction) {
+    try {
+      await UserService.logout(req.user!);
+      res.status(200).json({
+        data: "OK",
+      });
+    } catch (e) {
+      nex(e);
+    }
+  }
 }
