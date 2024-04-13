@@ -2,6 +2,7 @@ import { logger } from "../src/application/logging";
 import { web } from "../src/application/web";
 import supertest from "supertest";
 import { UserTest } from "./user-util";
+import bcrypt from "bcrypt";
 
 describe("POST /api/users", () => {
   afterEach(async () => {
@@ -98,5 +99,64 @@ describe("GET /api/users/current", () => {
     logger.debug(response.body);
     expect(response.status).toBe(401);
     expect(response.body.error).toBeDefined();
+  });
+});
+
+describe("PATCH /api/users/current", () => {
+  beforeEach(async () => {
+    await UserTest.create();
+  });
+  afterEach(async () => {
+    await UserTest.delete();
+  });
+  it("should be reject if invalid request", async () => {
+    const response = await supertest(web)
+      .patch("/api/users/current")
+      .set("X-API-TOKEN", "test")
+      .send({
+        name: "",
+        password: "",
+      });
+    logger.debug(response.body);
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBeDefined();
+  });
+
+  it("should be reject if token invalid", async () => {
+    const response = await supertest(web)
+      .patch("/api/users/current")
+      .set("X-API-TOKEN", "wrong")
+      .send({
+        name: "test",
+        password: "test",
+      });
+    logger.debug(response.body);
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBeDefined();
+  });
+
+  it("should be able to update user name", async () => {
+    const response = await supertest(web)
+      .patch("/api/users/current")
+      .set("X-API-TOKEN", "test")
+      .send({
+        name: "test",
+      });
+    logger.debug(response.body);
+    expect(response.status).toBe(200);
+    expect(response.body.data.name).toBe("test");
+  });
+
+  it("should be able to update user password", async () => {
+    const response = await supertest(web)
+      .patch("/api/users/current")
+      .set("X-API-TOKEN", "test")
+      .send({
+        password: "benar",
+      });
+    logger.debug(response.body);
+    expect(response.status).toBe(200);
+    const user = await UserTest.get();
+    expect(await bcrypt.compare("benar", user.password)).toBe(true);
   });
 });
