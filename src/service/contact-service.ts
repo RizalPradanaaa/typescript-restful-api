@@ -2,6 +2,7 @@ import { Contact, User } from "@prisma/client";
 import {
   ContactCreateRequest,
   ContactResponse,
+  UpdateContactRequest,
   toContactResponse,
 } from "../model/contact-model";
 import { ContactValidation } from "../validation/contact-validation";
@@ -45,6 +46,25 @@ export class ContactService {
   }
   static async get(user: User, id: number): Promise<ContactResponse> {
     const contact = await this.checkContactMustExist(user.username, id);
+    return toContactResponse(contact);
+  }
+
+  static async update(
+    user: User,
+    request: UpdateContactRequest
+  ): Promise<ContactResponse> {
+    const updateRequest = await Validation.validate(
+      ContactValidation.UPDATE,
+      request
+    );
+    await this.checkContactMustExist(user.username, updateRequest.id);
+    const contact = await prismaClient.contact.update({
+      where: {
+        id: updateRequest.id,
+        username: user.username,
+      },
+      data: updateRequest,
+    });
     return toContactResponse(contact);
   }
 }
