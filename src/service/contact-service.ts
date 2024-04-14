@@ -2,6 +2,7 @@ import { Contact, User } from "@prisma/client";
 import {
   ContactCreateRequest,
   ContactResponse,
+  SearchContactRequest,
   UpdateContactRequest,
   toContactResponse,
 } from "../model/contact-model";
@@ -9,6 +10,8 @@ import { ContactValidation } from "../validation/contact-validation";
 import { Validation } from "../validation/validation";
 import { prismaClient } from "../application/database";
 import { ResponseError } from "../error/response-error";
+import { Pageable } from "../model/page";
+import { validate } from "uuid";
 
 export class ContactService {
   static async create(
@@ -77,5 +80,71 @@ export class ContactService {
       },
     });
     return toContactResponse(contact);
+  }
+
+  static async search(
+    user: User,
+    request: SearchContactRequest
+  ): Promise<Pageable<ContactResponse>> {
+    const searchRequest = Validation.validate(
+      ContactValidation.SEARCH,
+      request
+    );
+    const skip = (searchRequest.page - 1) * searchRequest.size;
+    const filters = [];
+    if (searchRequest.name) {
+      filters.push({
+        OR: [
+          {
+            first_name: {
+              contains: searchRequest.name,
+            },
+          },
+          {
+            last_name: {
+              contains: searchRequest.name,
+            },
+          },
+        ],
+      });
+    }
+
+    if (searchRequest.email) {
+      filters.push({
+        email: {
+          contains: searchRequest.email,
+        },
+      });
+    }
+    if (searchRequest.phone) {
+      filters.push({
+        phone: {
+          contains: searchRequest.phone,
+        },
+      });
+    }
+
+    const contact = await prismaClient.contact.findMany({
+      where: {
+        username: user.username,
+        AND: filters,
+      },
+      skip: skip,
+      take: searchRequest.size,
+    });
+    const total = await prismaClient.contact.count({
+      where: {
+        username: user.username,
+        AND: filters,
+      },
+    });
+    return {
+      data: contact.map((contact) => toContactResponse(contact)),
+      paging: {
+        current_page: searchRequest.page,
+        total_page: Math.ceil(total / searchRequest.size),
+        size: searchRequest.size,
+      },
+    };
   }
 }
