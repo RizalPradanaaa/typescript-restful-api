@@ -15,4 +15,16 @@ export class ContactController {
       nex(e);
     }
   }
+
+  static async get(req: UserRequestType, res: Response, nex: NextFunction) {
+    try {
+      const id = Number(req.params.contactId);
+      const response = await ContactService.get(req.user!, id);
+      res.status(200).json({
+        data: response,
+      });
+    } catch (e) {
+      nex(e);
+    }
+  }
 }
