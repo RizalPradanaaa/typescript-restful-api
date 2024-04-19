@@ -3,6 +3,7 @@ import { UserRequestType } from "../type/user-request";
 import {
   AddressCreateRequest,
   GetAddressRequest,
+  UpdateAddressRequest,
 } from "../model/address-model";
 import { AddressService } from "../service/address-service";
 
@@ -32,6 +33,21 @@ export class AddressController {
       });
     } catch (e) {
       nex(e);
+    }
+  }
+
+  static async update(req: UserRequestType, res: Response, next: NextFunction) {
+    try {
+      const request: UpdateAddressRequest = req.body as UpdateAddressRequest;
+      request.contact_id = Number(req.params.contactId);
+      request.id = Number(req.params.addressId);
+
+      const response = await AddressService.update(req.user!, request);
+      res.status(200).json({
+        data: response,
+      });
+    } catch (e) {
+      next(e);
     }
   }
 }

@@ -3,6 +3,7 @@ import {
   AddressCreateRequest,
   AddressResponse,
   GetAddressRequest,
+  UpdateAddressRequest,
   toAddressResponse,
 } from "../model/address-model";
 import { AddressValidation } from "../validation/address-validation";
@@ -62,6 +63,33 @@ export class AddressService {
       request.contact_id,
       request.id
     );
+    return toAddressResponse(address);
+  }
+  static async update(
+    user: User,
+    request: UpdateAddressRequest
+  ): Promise<AddressResponse> {
+    const updateRequest = Validation.validate(
+      AddressValidation.UPDATE,
+      request
+    );
+    await ContactService.checkContactMustExist(
+      user.username,
+      request.contact_id
+    );
+    await this.checkAddressMustExist(
+      updateRequest.contact_id,
+      updateRequest.id
+    );
+
+    const address = await prismaClient.address.update({
+      where: {
+        id: updateRequest.id,
+        contact_id: updateRequest.contact_id,
+      },
+      data: updateRequest,
+    });
+
     return toAddressResponse(address);
   }
 }
