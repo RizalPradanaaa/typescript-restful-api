@@ -64,7 +64,7 @@ describe("GET /api/contacts/:contactId", () => {
       .get(`/api/contacts/${contact.id}`)
       .set("X-API-TOKEN", "test");
 
-    logger.debug(response.body);
+    // logger.debug(response.body);
     expect(response.status).toBe(200);
     expect(response.body.data.id).toBe(contact.id);
     expect(response.body.data.first_name).toBe(contact.first_name);
